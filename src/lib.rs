@@ -15,9 +15,9 @@ pub struct Session {
 impl Session {
     pub async fn new(dc: &str, key: &str, user_id: &str) -> Result<Self> {
         let http_client = reqwest::Client::new();
-        let access_token_resp = api::get_access_token(&http_client, dc, key).await?;
+        let access_token_resp = api::session::get_access_token(&http_client, dc, key).await?;
         let client_token =
-            api::get_client_token(&http_client, &access_token_resp.client_id).await?;
+            api::session::get_client_token(&http_client, &access_token_resp.client_id).await?;
 
         Ok(Self {
             user_id: user_id.to_string(),
