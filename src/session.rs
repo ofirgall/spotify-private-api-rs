@@ -1,5 +1,5 @@
 use crate::api;
-use serde_json::Result;
+use crate::Result;
 
 #[derive(Debug)]
 pub struct Session {
@@ -36,10 +36,11 @@ impl Session {
             .header("authorization", format!("Bearer {}", self.access_token))
             .header("client-token", &self.client_token)
             .send()
-            .await.unwrap().text().await.unwrap();
-        // println!("Res: {}", res);
+            .await?
+            .text()
+            .await?;
 
-        serde_json::from_str(&res)
+        Ok(serde_json::from_str(&res)?)
     }
 }
 

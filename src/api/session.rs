@@ -5,7 +5,8 @@ use serde::{Deserialize, Serialize};
 use serde_with::formats::Flexible;
 use serde_with::TimestampMilliSeconds;
 
-use serde_json::{Result, Value};
+use crate::Result;
+use serde_json::Value;
 
 #[serde_with::serde_as]
 #[derive(Serialize, Deserialize, Debug)]
@@ -36,13 +37,11 @@ pub async fn get_access_token(
         .header("user-agent", FAKE_USER_AGENT)
         .header("Cookie", format!("sp_dc={};sp_key={}", dc, key))
         .send()
-        .await
-        .unwrap()
+        .await?
         .text()
-        .await
-        .unwrap();
+        .await?;
 
-    serde_json::from_str(&res)
+    Ok(serde_json::from_str(&res)?)
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -103,11 +102,9 @@ pub async fn get_client_token(http_client: &reqwest::Client, client_id: &str) ->
         .header("Content-Type", "application/json")
         .body(json)
         .send()
-        .await
-        .unwrap()
+        .await?
         .text()
-        .await
-        .unwrap();
+        .await?;
 
     let res: ClientTokenResponse = serde_json::from_str(&res_body)?;
 

@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct RootList {
     revision: String,
     length: u32,
@@ -14,7 +14,7 @@ pub struct RootList {
     contents: RootListContent,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 struct RootListContent {
     pos: u32,
     truncated: bool,
@@ -24,13 +24,13 @@ struct RootListContent {
     meta_items: Vec<RootListMetaItem>,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 struct RootListItem {
     uri: String,
     attributes: HashMap<String, Value>,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 struct RootListMetaItem {
     revision: String,
     attributes: HashMap<String, Value>,
