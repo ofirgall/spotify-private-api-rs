@@ -60,7 +60,6 @@ impl Session {
     }
 
     async fn send_changes(&self, changes: &api::folders::Changes) -> Result<()> {
-        println!("{}", serde_json::to_string_pretty(changes)?);
         self.http_client
             .post(format!(
                 "https://spclient.wg.spotify.com/playlist/v2/user/{}/rootlist/changes",
@@ -80,6 +79,7 @@ impl Session {
     }
 }
 
+// TODO: Actual unit tests
 #[cfg(test)]
 mod tests {
     use crate::session::Session;
