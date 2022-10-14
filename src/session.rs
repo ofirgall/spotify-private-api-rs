@@ -80,32 +80,32 @@ impl Session {
 }
 
 // TODO: Actual unit tests
-#[cfg(test)]
-mod tests {
-    use crate::session::Session;
-
-    #[tokio::test]
-    async fn test_new_session() {
-        let dc = std::env::var("SPOTIFY_DC").unwrap();
-        let key = std::env::var("SPOTIFY_KEY").unwrap();
-        let user_id = std::env::var("SPOTIFY_USER_ID").unwrap();
-
-        let s = Session::new(&dc, &key, &user_id).await.unwrap();
-        println!("{:?}", s);
-        let root_list = s.get_root_list().await.unwrap();
-        println!("{:?}", root_list);
-    }
-
-    #[tokio::test]
-    async fn test_create_folder() {
-        let dc = std::env::var("SPOTIFY_DC").unwrap();
-        let key = std::env::var("SPOTIFY_KEY").unwrap();
-        let user_id = std::env::var("SPOTIFY_USER_ID").unwrap();
-
-        let s = Session::new(&dc, &key, &user_id).await.unwrap();
-        let root_list = s.get_root_list().await.unwrap();
-        s.add_folder(&root_list.revision, "Abablagan", 0, 2)
-            .await
-            .unwrap();
-    }
-}
+// #[cfg(test)]
+// mod tests {
+//     use crate::session::Session;
+//
+//     #[tokio::test]
+//     async fn test_new_session() {
+//         let dc = std::env::var("SPOTIFY_DC").unwrap();
+//         let key = std::env::var("SPOTIFY_KEY").unwrap();
+//         let user_id = std::env::var("SPOTIFY_USER_ID").unwrap();
+//
+//         let s = Session::new(&dc, &key, &user_id).await.unwrap();
+//         println!("{:?}", s);
+//         let root_list = s.get_root_list().await.unwrap();
+//         println!("{:?}", root_list);
+//     }
+//
+//     #[tokio::test]
+//     async fn test_create_folder() {
+//         let dc = std::env::var("SPOTIFY_DC").unwrap();
+//         let key = std::env::var("SPOTIFY_KEY").unwrap();
+//         let user_id = std::env::var("SPOTIFY_USER_ID").unwrap();
+//
+//         let s = Session::new(&dc, &key, &user_id).await.unwrap();
+//         let root_list = s.get_root_list().await.unwrap();
+//         s.add_folder(&root_list.revision, "Abablagan", 0, 2)
+//             .await
+//             .unwrap();
+//     }
+// }

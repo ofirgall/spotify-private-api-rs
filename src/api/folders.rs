@@ -5,7 +5,12 @@ use std::time::UNIX_EPOCH;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-#[derive(Serialize, Deserialize, Debug)]
+#[cfg(not(test))]
+fn now() -> SystemTime {
+    SystemTime::now()
+}
+
+#[derive(Serialize, Deserialize, Debug, PartialEq)]
 pub struct RootList {
     pub revision: String,
     length: u32,
@@ -16,7 +21,7 @@ pub struct RootList {
     contents: RootListContent,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, PartialEq)]
 struct RootListContent {
     pos: u32,
     truncated: bool,
@@ -26,13 +31,13 @@ struct RootListContent {
     meta_items: Vec<RootListMetaItem>,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, PartialEq)]
 struct RootListItem {
     uri: String,
     attributes: HashMap<String, Value>,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, PartialEq)]
 struct RootListMetaItem {
     revision: Option<String>,
     attributes: Option<HashMap<String, Value>>,
@@ -43,7 +48,7 @@ struct RootListMetaItem {
     owner_username: Option<String>,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, PartialEq)]
 pub struct Changes {
     #[serde(rename = "baseRevision")]
     base_revision: String,
@@ -57,13 +62,13 @@ pub struct Changes {
     nonces: Vec<Value>,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, PartialEq)]
 struct Delta {
     ops: Vec<Operation>,
     info: DeltaInfo,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, PartialEq)]
 struct DeltaInfo {
     user: String,
     timestamp: String,
@@ -96,7 +101,7 @@ impl Default for DeltaInfo {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, PartialEq)]
 struct DeltaInfoSource {
     client: String,
     app: String,
@@ -115,7 +120,7 @@ impl Default for DeltaInfoSource {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, PartialEq)]
 #[serde(tag = "kind")]
 enum Operation {
     #[serde(rename = "ADD")]
@@ -126,12 +131,12 @@ enum Operation {
     Mov(MoveOperation),
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, PartialEq)]
 struct AddOperation {
     add: AddOperationParams,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, PartialEq)]
 struct AddOperationParams {
     #[serde(rename = "fromIndex")]
     from_index: u32,
@@ -145,12 +150,12 @@ struct AddOperationParams {
     add_first: bool,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, PartialEq)]
 struct RemoveOperation {
     rem: RemoveOperationParams,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, PartialEq)]
 struct RemoveOperationParams {
     #[serde(rename = "fromIndex")]
     from_index: u32,
@@ -162,12 +167,12 @@ struct RemoveOperationParams {
     items_as_key: bool,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, PartialEq)]
 struct MoveOperation {
     rem: MoveOperationParams,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, PartialEq)]
 struct MoveOperationParams {
     #[serde(rename = "fromIndex")]
     from_index: u32,
@@ -178,7 +183,7 @@ struct MoveOperationParams {
     length: u32,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, PartialEq)]
 struct OperationItem {
     uri: String,
 
@@ -209,7 +214,7 @@ impl OperationItem {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, PartialEq)]
 struct OperationItemAttrs {
     #[serde(rename = "addedBy")]
     added_by: String,
@@ -227,7 +232,7 @@ struct OperationItemAttrs {
 
 impl Default for OperationItemAttrs {
     fn default() -> Self {
-        let timestamp = SystemTime::now()
+        let timestamp = now()
             .duration_since(UNIX_EPOCH)
             .expect("Time went backwards");
 
@@ -279,14 +284,73 @@ pub fn add_folder(revision: &str, name: &str, start_index: u32, end_index: u32) 
 
 #[cfg(test)]
 mod tests {
-    use super::RootList;
+
+    use crate::api::folders::mock_time::set_mock_time;
+
+    use super::{add_folder, RootList};
+
+    const REV: &str = "AAAAELqqrKuzaoeUKYP7gEzCzrx3h0rD";
 
     #[test]
-    fn test_root_list_parse() {
-        let api_response = r#"{"revision":"AAAACf20+ElrZP4No2PQNHbgGYa/ht3r","length":4,"attributes":{},"contents":{"pos":0,"truncated":false,"items":[{"uri":"spotify:start-group:123456789abcdefa:Abablagan","attributes":{"timestamp":"1665495078416","seenAt":"0","public":false}},{"uri":"spotify:end-group:123456789abcdefa","attributes":{"timestamp":"1665495078416","seenAt":"0","public":false}},{"uri":"spotify:playlist:5aNzxEEkRE9MgNkiuXmpOR","attributes":{"timestamp":"1665486971754","seenAt":"0","public":false}},{"uri":"spotify:playlist:3FKTkhbClLGgKdPpbx3aHy","attributes":{"timestamp":"1665486908663","seenAt":"0","public":false}}],"metaItems":[{},{},{"revision":"AAAAAX9FIoTlMkv9e4zCryuZtD/yioLv","attributes":{"name":"My Playlist #2"},"length":0,"timestamp":"1665486971670","ownerUsername":"31h5mfzvglpwfevvaens2flw7smu"},{"revision":"AAAAAvZixvi5cLYefOMaVOKtGZUJS5pE","attributes":{"name":"My Playlist #1"},"length":1,"timestamp":"1665486922515","ownerUsername":"31h5mfzvglpwfevvaens2flw7smu"}]},"timestamp":"1665495078416"}"#;
+    fn test_root_list_des() {
+        let api_response = r#"{"revision":"AAAAELqqrKuzaoeUKYP7gEzCzrx3h0rD","length":4,"attributes":{},"contents":{"pos":0,"truncated":false,"items":[{"uri":"spotify:start-group:123456789abcdefa:Abablagan","attributes":{"timestamp":"1665495078416","seenAt":"0","public":false}},{"uri":"spotify:end-group:123456789abcdefa","attributes":{"timestamp":"1665495078416","seenAt":"0","public":false}},{"uri":"spotify:playlist:5aNzxEEkRE9MgNkiuXmpOR","attributes":{"timestamp":"1665486971754","seenAt":"0","public":false}},{"uri":"spotify:playlist:3FKTkhbClLGgKdPpbx3aHy","attributes":{"timestamp":"1665486908663","seenAt":"0","public":false}}],"metaItems":[{},{},{"revision":"AAAAAX9FIoTlMkv9e4zCryuZtD/yioLv","attributes":{"name":"My Playlist #2"},"length":0,"timestamp":"1665486971670","ownerUsername":"31h5mfzvglpwfevvaens2flw7smu"},{"revision":"AAAAAvZixvi5cLYefOMaVOKtGZUJS5pE","attributes":{"name":"My Playlist #1"},"length":1,"timestamp":"1665486922515","ownerUsername":"31h5mfzvglpwfevvaens2flw7smu"}]},"timestamp":"1665495078416"}"#;
 
-        let rl: RootList = serde_json::from_str(api_response).unwrap();
+        let rl: RootList = serde_json::from_str(api_response).expect("Couldn't parse rootlist");
 
-        assert_eq!(rl.revision, "AAAACf20+ElrZP4No2PQNHbgGYa/ht3r")
+        assert_eq!(rl.revision, REV)
+    }
+
+    #[test]
+    fn test_root_list_ser() {
+        // TODO: Implement
+    }
+
+    #[test]
+    fn test_add_des() {
+        // TODO: Implement
+    }
+
+    #[test]
+    fn test_add_ser() {
+        set_mock_time(1665582465479);
+
+        let changes = add_folder(REV, "TestFolder", 0, 2);
+
+        let expected = serde_json::from_str(r#"{"baseRevision":"AAAAELqqrKuzaoeUKYP7gEzCzrx3h0rD","deltas":[{"ops":[{"kind":"ADD","add":{"fromIndex":0,"items":[{"uri":"spotify:start-group:123456789abcdefa:TestFolder","attributes":{"addedBy":"","timestamp":"1665582465479","seenAt":"0","public":false,"formatAttributes":[]}}],"addLast":false,"addFirst":false}},{"kind":"ADD","add":{"fromIndex":2,"items":[{"uri":"spotify:end-group:123456789abcdefa","attributes":{"addedBy":"","timestamp":"1665582465479","seenAt":"0","public":false,"formatAttributes":[]}}],"addLast":false,"addFirst":false}}],"info":{"user":"","timestamp":"0","admin":false,"undo":false,"redo":false,"merge":false,"compressed":false,"migration":false,"splitId":0,"source":{"client":"WEBPLAYER","app":"","source":"","version":""}}}],"wantResultingRevisions":false,"wantSyncResult":false,"nonces":[]}"#).expect("Coudln't parse expected json");
+
+        assert_eq!(changes, expected);
     }
 }
+
+#[cfg(test)]
+pub mod mock_time {
+    use super::*;
+    use std::{cell::RefCell, time::Duration};
+
+    thread_local! {
+        static MOCK_TIME: RefCell<Option<SystemTime>> = RefCell::new(None);
+    }
+
+    pub fn now() -> SystemTime {
+        MOCK_TIME.with(|cell| {
+            cell.borrow()
+                .as_ref()
+                .cloned()
+                .unwrap_or_else(SystemTime::now)
+        })
+    }
+
+    pub fn set_mock_time(epoch: u64) {
+        let time: SystemTime = SystemTime::UNIX_EPOCH
+            .checked_add(Duration::from_millis(epoch))
+            .expect("couldn't create time");
+        MOCK_TIME.with(|cell| *cell.borrow_mut() = Some(time));
+    }
+
+    pub fn clear_mock_time() {
+        MOCK_TIME.with(|cell| *cell.borrow_mut() = None);
+    }
+}
+
+#[cfg(test)]
+pub use mock_time::now;
