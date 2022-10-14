@@ -8,11 +8,12 @@ pub struct Session {
     http_client: reqwest::Client,
 
     access_token: String,
-    client_id: String,
     client_token: String,
 }
 
 impl Session {
+    /// Creates a new session for spotify private api
+    ///
     pub async fn new(dc: &str, key: &str, user_id: &str) -> Result<Self> {
         let http_client = reqwest::Client::new();
         let access_token_resp = api::session::get_access_token(&http_client, dc, key).await?;
@@ -23,7 +24,6 @@ impl Session {
             user_id: user_id.to_string(),
             http_client,
             access_token: access_token_resp.access_token,
-            client_id: access_token_resp.client_id,
             client_token,
         })
     }
@@ -63,7 +63,7 @@ impl Session {
     }
 }
 
-// TODO: Actual unit tests
+// TODO: Write a system test framework to work with a real spotify connection
 #[cfg(test)]
 mod tests {
     use crate::session::Session;
@@ -79,6 +79,7 @@ mod tests {
             .expect("Failed to create session")
     }
 
+    #[cfg_attr(not(feature = "system-tests"), ignore)]
     #[tokio::test]
     async fn test_new_session() {
         let root_list = session_from_env()
@@ -89,6 +90,7 @@ mod tests {
         println!("{:?}", root_list); // TODO: validate root list
     }
 
+    #[cfg_attr(not(feature = "system-tests"), ignore)]
     #[tokio::test]
     async fn test_create_folder() {
         let s = session_from_env().await;
