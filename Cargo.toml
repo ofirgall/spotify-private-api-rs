@@ -3,6 +3,10 @@ name = "spotify-private-api"
 version = "0.1.0"
 edition = "2021"
 license = "MIT"
+description = "Spotify private api for rust, add/remove/delete folders"
+repository = "https://github.com/ofirgall/spotify-private-api-rs/"
+keywords = ["spotify"]
+categories = ["accessibility"]
 
 [features]
 system-tests = []
