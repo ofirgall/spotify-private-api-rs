@@ -199,9 +199,20 @@ struct RemoveOperationParams {
     items_as_key: bool,
 }
 
+impl Default for RemoveOperationParams {
+    fn default() -> Self {
+        Self {
+            from_index: 0,
+            length: 0,
+            items: vec![],
+            items_as_key: false,
+        }
+    }
+}
+
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 struct MoveOperation {
-    rem: MoveOperationParams,
+    mov: MoveOperationParams,
 }
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
@@ -322,6 +333,30 @@ impl FolderRequest {
 
         self
     }
+
+    pub fn remove(&mut self, start_index: u32, length: u32) -> &Self {
+        self.ops.push(Operation::Rem(RemoveOperation {
+            rem: RemoveOperationParams {
+                from_index: start_index,
+                length,
+                ..Default::default()
+            },
+        }));
+
+        self
+    }
+
+    pub fn mov(&mut self, from_index: u32, to_index: u32, length: u32) -> &Self {
+        self.ops.push(Operation::Mov(MoveOperation {
+            mov: MoveOperationParams {
+                from_index,
+                to_index,
+                length,
+            },
+        }));
+
+        self
+    }
 }
 
 #[cfg(test)]
@@ -361,6 +396,34 @@ mod tests {
             .build();
 
         let expected = serde_json::from_str(r#"{"baseRevision":"AAAAELqqrKuzaoeUKYP7gEzCzrx3h0rD","deltas":[{"ops":[{"kind":"ADD","add":{"fromIndex":0,"items":[{"uri":"spotify:start-group:123456789abcdefa:TestFolder","attributes":{"addedBy":"","timestamp":"1665582465479","seenAt":"0","public":false,"formatAttributes":[]}}],"addLast":false,"addFirst":false}},{"kind":"ADD","add":{"fromIndex":2,"items":[{"uri":"spotify:end-group:123456789abcdefa","attributes":{"addedBy":"","timestamp":"1665582465479","seenAt":"0","public":false,"formatAttributes":[]}}],"addLast":false,"addFirst":false}}],"info":{"user":"","timestamp":"0","admin":false,"undo":false,"redo":false,"merge":false,"compressed":false,"migration":false,"splitId":0,"source":{"client":"WEBPLAYER","app":"","source":"","version":""}}}],"wantResultingRevisions":false,"wantSyncResult":false,"nonces":[]}"#).expect("Coudln't parse expected json");
+
+        assert_eq!(changes, expected);
+    }
+
+    #[test]
+    fn test_rem_des() {
+        // TODO: Implement
+    }
+
+    #[test]
+    fn test_rem_ser() {
+        let changes = FolderRequest::new(REV).remove(23, 2).build();
+
+        let expected = serde_json::from_str(r#"{"baseRevision":"AAAAELqqrKuzaoeUKYP7gEzCzrx3h0rD","deltas":[{"ops":[{"kind":"REM","rem":{"fromIndex":23,"length":2,"items":[],"itemsAsKey":false}}],"info":{"user":"","timestamp":"0","admin":false,"undo":false,"redo":false,"merge":false,"compressed":false,"migration":false,"splitId":0,"source":{"client":"WEBPLAYER","app":"","source":"","version":""}}}],"wantResultingRevisions":false,"wantSyncResult":false,"nonces":[]}"#).expect("Coudln't parse expected json");
+
+        assert_eq!(changes, expected);
+    }
+
+    #[test]
+    fn test_mov_des() {
+        // TODO: Implement
+    }
+
+    #[test]
+    fn test_mov_ser() {
+        let changes = FolderRequest::new(REV).mov(6, 8, 1).build();
+
+        let expected = serde_json::from_str(r#"{"baseRevision":"AAAAELqqrKuzaoeUKYP7gEzCzrx3h0rD","deltas":[{"ops":[{"kind":"MOV","mov":{"fromIndex":6,"length":1,"toIndex":8}}],"info":{"user":"","timestamp":"0","admin":false,"undo":false,"redo":false,"merge":false,"compressed":false,"migration":false,"splitId":0,"source":{"client":"WEBPLAYER","app":"","source":"","version":""}}}],"wantResultingRevisions":false,"wantSyncResult":false,"nonces":[]}"#).expect("Coudln't parse expected json");
 
         assert_eq!(changes, expected);
     }
