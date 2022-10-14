@@ -395,7 +395,8 @@ mod tests {
 
         let rl: RootList = serde_json::from_str(api_response).expect("Couldn't parse rootlist");
 
-        assert_eq!(rl.revision, REV)
+        assert_eq!(rl.revision, REV);
+        rl.generate_uniq_uri();
     }
 
     #[test]
