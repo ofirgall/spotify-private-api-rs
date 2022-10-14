@@ -5,6 +5,8 @@ use std::time::UNIX_EPOCH;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
+use rand::distributions::{Alphanumeric, DistString};
+
 #[cfg(not(test))]
 fn now() -> SystemTime {
     SystemTime::now()
@@ -19,6 +21,26 @@ pub struct RootList {
     timestamp: String,
 
     contents: RootListContent,
+}
+
+impl RootList {
+    pub fn generate_uniq_uri(&self) -> String {
+        let all_uris: Vec<&String> = self.contents.items.iter().map(|x| &x.uri).collect();
+
+        generate_uniq_uri(all_uris)
+    }
+}
+
+const URI_LENGTH: usize = 16;
+
+fn generate_uniq_uri(uris: Vec<&String>) -> String {
+    loop {
+        let rand_uri = Alphanumeric.sample_string(&mut rand::thread_rng(), URI_LENGTH);
+
+        if !uris.contains(&&rand_uri) {
+            return rand_uri;
+        }
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
@@ -242,7 +264,6 @@ impl OperationItem {
     }
 
     fn new_start_folder(uri: &str, folder_name: &str) -> Self {
-        // TODO: generate uri?
         Self {
             uri: format!("spotify:start-group:{}:{}", uri, folder_name),
             attributes: OperationItemAttrs::default(),
@@ -364,7 +385,7 @@ mod tests {
 
     use crate::api::folders::mock_time::set_mock_time;
 
-    use super::{FolderRequest, RootList};
+    use super::{generate_uniq_uri, FolderRequest, RootList};
 
     const REV: &str = "AAAAELqqrKuzaoeUKYP7gEzCzrx3h0rD";
 
@@ -426,6 +447,11 @@ mod tests {
         let expected = serde_json::from_str(r#"{"baseRevision":"AAAAELqqrKuzaoeUKYP7gEzCzrx3h0rD","deltas":[{"ops":[{"kind":"MOV","mov":{"fromIndex":6,"length":1,"toIndex":8}}],"info":{"user":"","timestamp":"0","admin":false,"undo":false,"redo":false,"merge":false,"compressed":false,"migration":false,"splitId":0,"source":{"client":"WEBPLAYER","app":"","source":"","version":""}}}],"wantResultingRevisions":false,"wantSyncResult":false,"nonces":[]}"#).expect("Coudln't parse expected json");
 
         assert_eq!(changes, expected);
+    }
+
+    #[test]
+    fn test_gen_uri() {
+        generate_uniq_uri(vec![&"123456789abcdefa".to_string()]);
     }
 }
 
