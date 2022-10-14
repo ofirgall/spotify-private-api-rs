@@ -117,19 +117,10 @@ impl Default for Changes {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Default)]
 struct Delta {
     ops: Vec<Operation>,
     info: DeltaInfo,
-}
-
-impl Default for Delta {
-    fn default() -> Self {
-        Self {
-            ops: vec![],
-            info: DeltaInfo::default(),
-        }
-    }
 }
 
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
@@ -200,7 +191,7 @@ struct AddOperation {
     add: AddOperationParams,
 }
 
-#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Clone, Default)]
 struct AddOperationParams {
     #[serde(rename = "fromIndex")]
     from_index: u32,
@@ -214,23 +205,12 @@ struct AddOperationParams {
     add_first: bool,
 }
 
-impl Default for AddOperationParams {
-    fn default() -> Self {
-        Self {
-            from_index: 0,
-            items: vec![],
-            add_last: false,
-            add_first: false,
-        }
-    }
-}
-
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 struct RemoveOperation {
     rem: RemoveOperationParams,
 }
 
-#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Clone, Default)]
 struct RemoveOperationParams {
     #[serde(rename = "fromIndex")]
     from_index: u32,
@@ -240,17 +220,6 @@ struct RemoveOperationParams {
     items: Vec<Value>,
     #[serde(rename = "itemsAsKey")]
     items_as_key: bool,
-}
-
-impl Default for RemoveOperationParams {
-    fn default() -> Self {
-        Self {
-            from_index: 0,
-            length: 0,
-            items: vec![],
-            items_as_key: false,
-        }
-    }
 }
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
@@ -277,6 +246,7 @@ struct OperationItem {
 }
 
 impl OperationItem {
+    #[allow(dead_code)] // TODO: remove this after we test it
     fn new_playlist(uri: String) -> Self {
         Self {
             uri: format!("spotify:playlist:{}", uri),
