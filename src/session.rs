@@ -50,13 +50,14 @@ impl Session {
         start_index: u32,
         end_index: u32,
     ) -> Result<()> {
-        self.send_changes(&api::folders::add_folder(
-            revision,
-            name,
-            start_index,
-            end_index,
-        ))
-        .await
+        // self.send_changes(&api::folders::add_folder(
+        //     revision,
+        //     name,
+        //     start_index,
+        //     end_index,
+        // ))
+        // .await
+        Ok(())
     }
 
     async fn send_changes(&self, changes: &api::folders::Changes) -> Result<()> {

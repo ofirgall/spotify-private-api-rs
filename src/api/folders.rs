@@ -62,10 +62,31 @@ pub struct Changes {
     nonces: Vec<Value>,
 }
 
+impl Default for Changes {
+    fn default() -> Self {
+        Self {
+            base_revision: "".to_string(),
+            deltas: vec![],
+            want_resulting_revisions: false,
+            want_sync_result: false,
+            nonces: vec![],
+        }
+    }
+}
+
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
 struct Delta {
     ops: Vec<Operation>,
     info: DeltaInfo,
+}
+
+impl Default for Delta {
+    fn default() -> Self {
+        Self {
+            ops: vec![],
+            info: DeltaInfo::default(),
+        }
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
@@ -120,7 +141,7 @@ impl Default for DeltaInfoSource {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 #[serde(tag = "kind")]
 enum Operation {
     #[serde(rename = "ADD")]
@@ -131,12 +152,12 @@ enum Operation {
     Mov(MoveOperation),
 }
 
-#[derive(Serialize, Deserialize, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 struct AddOperation {
     add: AddOperationParams,
 }
 
-#[derive(Serialize, Deserialize, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 struct AddOperationParams {
     #[serde(rename = "fromIndex")]
     from_index: u32,
@@ -150,12 +171,23 @@ struct AddOperationParams {
     add_first: bool,
 }
 
-#[derive(Serialize, Deserialize, Debug, PartialEq)]
+impl Default for AddOperationParams {
+    fn default() -> Self {
+        Self {
+            from_index: 0,
+            items: vec![],
+            add_last: false,
+            add_first: false,
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 struct RemoveOperation {
     rem: RemoveOperationParams,
 }
 
-#[derive(Serialize, Deserialize, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 struct RemoveOperationParams {
     #[serde(rename = "fromIndex")]
     from_index: u32,
@@ -167,12 +199,12 @@ struct RemoveOperationParams {
     items_as_key: bool,
 }
 
-#[derive(Serialize, Deserialize, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 struct MoveOperation {
     rem: MoveOperationParams,
 }
 
-#[derive(Serialize, Deserialize, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 struct MoveOperationParams {
     #[serde(rename = "fromIndex")]
     from_index: u32,
@@ -183,7 +215,7 @@ struct MoveOperationParams {
     length: u32,
 }
 
-#[derive(Serialize, Deserialize, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 struct OperationItem {
     uri: String,
 
@@ -198,7 +230,7 @@ impl OperationItem {
         }
     }
 
-    fn new_start_folder(uri: String, folder_name: &str) -> Self {
+    fn new_start_folder(uri: &str, folder_name: &str) -> Self {
         // TODO: generate uri?
         Self {
             uri: format!("spotify:start-group:{}:{}", uri, folder_name),
@@ -206,7 +238,7 @@ impl OperationItem {
         }
     }
 
-    fn new_end_folder(uri: String) -> Self {
+    fn new_end_folder(uri: &str) -> Self {
         Self {
             uri: format!("spotify:end-group:{}", uri),
             attributes: OperationItemAttrs::default(),
@@ -214,7 +246,7 @@ impl OperationItem {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 struct OperationItemAttrs {
     #[serde(rename = "addedBy")]
     added_by: String,
@@ -246,39 +278,49 @@ impl Default for OperationItemAttrs {
     }
 }
 
-// TODO: tmp function to test structs
-pub fn add_folder(revision: &str, name: &str, start_index: u32, end_index: u32) -> Changes {
-    Changes {
-        base_revision: revision.to_string(),
-        want_resulting_revisions: false,
-        want_sync_result: false,
-        nonces: vec![],
-        deltas: vec![Delta {
-            ops: vec![
-                Operation::Add(AddOperation {
-                    add: AddOperationParams {
-                        from_index: start_index,
-                        items: vec![OperationItem::new_start_folder(
-                            "123456789abcdefa".to_string(),
-                            name,
-                        )],
-                        add_last: false,
-                        add_first: false,
-                    },
-                }),
-                Operation::Add(AddOperation {
-                    add: AddOperationParams {
-                        from_index: end_index,
-                        items: vec![OperationItem::new_end_folder(
-                            "123456789abcdefa".to_string(),
-                        )],
-                        add_last: false,
-                        add_first: false,
-                    },
-                }),
-            ],
-            info: DeltaInfo::default(),
-        }],
+/// Build a changes request
+pub struct FolderRequest {
+    revision: String,
+    ops: Vec<Operation>,
+}
+
+impl FolderRequest {
+    pub fn new(revision: &str) -> Self {
+        Self {
+            revision: revision.to_string(),
+            ops: vec![],
+        }
+    }
+
+    pub fn build(&self) -> Changes {
+        Changes {
+            base_revision: self.revision.clone(),
+            deltas: vec![Delta {
+                ops: self.ops.clone(),
+                ..Default::default()
+            }],
+            ..Default::default()
+        }
+    }
+
+    pub fn add(&mut self, name: &str, uri: &str, start_index: u32, end_index: u32) -> &Self {
+        self.ops.push(Operation::Add(AddOperation {
+            add: AddOperationParams {
+                from_index: start_index,
+                items: vec![OperationItem::new_start_folder(uri, name)],
+                ..Default::default()
+            },
+        }));
+
+        self.ops.push(Operation::Add(AddOperation {
+            add: AddOperationParams {
+                from_index: end_index,
+                items: vec![OperationItem::new_end_folder(uri)],
+                ..Default::default()
+            },
+        }));
+
+        self
     }
 }
 
@@ -287,7 +329,7 @@ mod tests {
 
     use crate::api::folders::mock_time::set_mock_time;
 
-    use super::{add_folder, RootList};
+    use super::{FolderRequest, RootList};
 
     const REV: &str = "AAAAELqqrKuzaoeUKYP7gEzCzrx3h0rD";
 
@@ -314,7 +356,9 @@ mod tests {
     fn test_add_ser() {
         set_mock_time(1665582465479);
 
-        let changes = add_folder(REV, "TestFolder", 0, 2);
+        let changes = FolderRequest::new(REV)
+            .add("TestFolder", "123456789abcdefa", 0, 2)
+            .build();
 
         let expected = serde_json::from_str(r#"{"baseRevision":"AAAAELqqrKuzaoeUKYP7gEzCzrx3h0rD","deltas":[{"ops":[{"kind":"ADD","add":{"fromIndex":0,"items":[{"uri":"spotify:start-group:123456789abcdefa:TestFolder","attributes":{"addedBy":"","timestamp":"1665582465479","seenAt":"0","public":false,"formatAttributes":[]}}],"addLast":false,"addFirst":false}},{"kind":"ADD","add":{"fromIndex":2,"items":[{"uri":"spotify:end-group:123456789abcdefa","attributes":{"addedBy":"","timestamp":"1665582465479","seenAt":"0","public":false,"formatAttributes":[]}}],"addLast":false,"addFirst":false}}],"info":{"user":"","timestamp":"0","admin":false,"undo":false,"redo":false,"merge":false,"compressed":false,"migration":false,"splitId":0,"source":{"client":"WEBPLAYER","app":"","source":"","version":""}}}],"wantResultingRevisions":false,"wantSyncResult":false,"nonces":[]}"#).expect("Coudln't parse expected json");
 
