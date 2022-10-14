@@ -43,24 +43,7 @@ impl Session {
         Ok(serde_json::from_str(&res)?)
     }
 
-    pub async fn add_folder(
-        &self,
-        revision: &str,
-        name: &str,
-        start_index: u32,
-        end_index: u32,
-    ) -> Result<()> {
-        // self.send_changes(&api::folders::add_folder(
-        //     revision,
-        //     name,
-        //     start_index,
-        //     end_index,
-        // ))
-        // .await
-        Ok(())
-    }
-
-    async fn send_changes(&self, changes: &api::folders::Changes) -> Result<()> {
+    pub async fn send_changes(&self, changes: &api::folders::Changes) -> Result<()> {
         self.http_client
             .post(format!(
                 "https://spclient.wg.spotify.com/playlist/v2/user/{}/rootlist/changes",
@@ -81,32 +64,43 @@ impl Session {
 }
 
 // TODO: Actual unit tests
-// #[cfg(test)]
-// mod tests {
-//     use crate::session::Session;
-//
-//     #[tokio::test]
-//     async fn test_new_session() {
-//         let dc = std::env::var("SPOTIFY_DC").unwrap();
-//         let key = std::env::var("SPOTIFY_KEY").unwrap();
-//         let user_id = std::env::var("SPOTIFY_USER_ID").unwrap();
-//
-//         let s = Session::new(&dc, &key, &user_id).await.unwrap();
-//         println!("{:?}", s);
-//         let root_list = s.get_root_list().await.unwrap();
-//         println!("{:?}", root_list);
-//     }
-//
-//     #[tokio::test]
-//     async fn test_create_folder() {
-//         let dc = std::env::var("SPOTIFY_DC").unwrap();
-//         let key = std::env::var("SPOTIFY_KEY").unwrap();
-//         let user_id = std::env::var("SPOTIFY_USER_ID").unwrap();
-//
-//         let s = Session::new(&dc, &key, &user_id).await.unwrap();
-//         let root_list = s.get_root_list().await.unwrap();
-//         s.add_folder(&root_list.revision, "Abablagan", 0, 2)
-//             .await
-//             .unwrap();
-//     }
-// }
+#[cfg(test)]
+mod tests {
+    use crate::session::Session;
+
+    async fn session_from_env() -> Session {
+        let dc = std::env::var("SPOTIFY_DC").expect("failed to get SPOTIFY_DC from ENV");
+        let key = std::env::var("SPOTIFY_KEY").expect("failed to get SPOTIFY_KEY from ENV");
+        let user_id =
+            std::env::var("SPOTIFY_USER_ID").expect("failed to get SPOTIFY_USER_ID from ENV");
+
+        Session::new(&dc, &key, &user_id)
+            .await
+            .expect("Failed to create session")
+    }
+
+    #[tokio::test]
+    async fn test_new_session() {
+        let root_list = session_from_env()
+            .await
+            .get_root_list()
+            .await
+            .expect("failed to get root list");
+        println!("{:?}", root_list); // TODO: validate root list
+    }
+
+    #[tokio::test]
+    async fn test_create_folder() {
+        let s = session_from_env().await;
+
+        let root_list = s.get_root_list().await.expect("failed to get root list");
+        let changes = root_list
+            .new_request()
+            .add("TestFolder", &root_list.generate_folder_uri(), 0, 2)
+            .build();
+
+        s.send_changes(&changes)
+            .await
+            .expect("failed to send changes");
+    }
+}

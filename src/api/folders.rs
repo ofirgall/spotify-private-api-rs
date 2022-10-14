@@ -1,11 +1,10 @@
+use std::cell::RefCell;
 use std::collections::HashMap;
 use std::time::SystemTime;
 use std::time::UNIX_EPOCH;
 
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-
-use rand::distributions::{Alphanumeric, DistString};
 
 #[cfg(not(test))]
 fn now() -> SystemTime {
@@ -21,21 +20,43 @@ pub struct RootList {
     timestamp: String,
 
     contents: RootListContent,
+
+    #[serde(skip)]
+    generated_uris: RefCell<Vec<String>>,
 }
 
 impl RootList {
-    pub fn generate_uniq_uri(&self) -> String {
-        let all_uris: Vec<&String> = self.contents.items.iter().map(|x| &x.uri).collect();
+    pub fn generate_folder_uri(&self) -> String {
+        let generated_uri = {
+            let generated_uris_borrowed = self.generated_uris.borrow();
 
-        generate_uniq_uri(all_uris)
+            let all_uris: Vec<&String> = self
+                .contents
+                .items
+                .iter()
+                .map(|x| &x.uri)
+                .chain(generated_uris_borrowed.iter())
+                .collect();
+
+            generate_folder_uri(all_uris)
+        };
+
+        self.generated_uris.borrow_mut().push(generated_uri.clone());
+
+        generated_uri
+    }
+
+    pub fn new_request(&self) -> FolderRequest {
+        FolderRequest::new(&self.revision)
     }
 }
 
 const URI_LENGTH: usize = 16;
+const URI_CHARSET: &str = "abcdef1234567890";
 
-fn generate_uniq_uri(uris: Vec<&String>) -> String {
+fn generate_folder_uri(uris: Vec<&String>) -> String {
     loop {
-        let rand_uri = Alphanumeric.sample_string(&mut rand::thread_rng(), URI_LENGTH);
+        let rand_uri = random_string::generate(URI_LENGTH, URI_CHARSET);
 
         if !uris.contains(&&rand_uri) {
             return rand_uri;
@@ -385,7 +406,7 @@ mod tests {
 
     use crate::api::folders::mock_time::set_mock_time;
 
-    use super::{generate_uniq_uri, FolderRequest, RootList};
+    use super::{generate_folder_uri, FolderRequest, RootList};
 
     const REV: &str = "AAAAELqqrKuzaoeUKYP7gEzCzrx3h0rD";
 
@@ -396,7 +417,7 @@ mod tests {
         let rl: RootList = serde_json::from_str(api_response).expect("Couldn't parse rootlist");
 
         assert_eq!(rl.revision, REV);
-        rl.generate_uniq_uri();
+        rl.generate_folder_uri();
     }
 
     #[test]
@@ -452,7 +473,7 @@ mod tests {
 
     #[test]
     fn test_gen_uri() {
-        generate_uniq_uri(vec![&"123456789abcdefa".to_string()]);
+        generate_folder_uri(vec![&"123456789abcdefa".to_string()]);
     }
 }
 
